@@ -7,34 +7,41 @@ import logging
 class Product(db.Model):
     __tablename__ = 'products'
 
-    id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.String(50), unique=True)  # Match CSV's ID format
+    # Mirror your CSV columns exactly
+    product_id = db.Column(db.String(50), primary_key=True)  # Assuming CSV has 'product_id' as a unique identifier
     name = db.Column(db.String(100), nullable=False)
     stock = db.Column(db.Integer, nullable=False)
     aisle = db.Column(db.String(20), nullable=False)
     price = db.Column(db.Float, nullable=False)
-    category = db.Column(db.String(50))
-
-    # Optional: Link to users (for restock alerts)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    user = db.relationship('User', backref='tracked_products')
 
     def __repr__(self):
         return f'Product(id={self.product_id}, name={self.name}, stock={self.stock})'
 
-    # CRUD methods (same as before)
-    def create(self): ...
-    def read(self): ...
-    def update(self, **kwargs): ...
-    def delete(self): ...
+    # Simplified CRUD methods
+    def create(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return self
+        except IntegrityError as e:
+            db.session.rollback()
+            logging.error(f"Error creating product: {str(e)}")
+            return None
+
+    def read(self):
+        return {
+            "product_id": self.product_id,
+            "name": self.name,
+            "stock": self.stock,
+            "aisle": self.aisle,
+            "price": self.price,
+        }
 
 def initProducts():
     """Load CSV data into SQLite once at startup"""
     with app.app_context():
         db.create_all()
-        
-        # Skip if DB already populated
-        if db.session.query(Product.product_id).first():  
+        if Product.query.first():  # Skip if DB already has data
             return
 
         try:
@@ -45,9 +52,7 @@ def initProducts():
                     name=row['name'],
                     stock=row['stock'],
                     aisle=row['aisle'],
-                    price=row['price'],
-                    category=row.get('category', 'general'),
-                )
+                    price=row['price'],                )
                 db.session.add(product)
             db.session.commit()
         except Exception as e:
