@@ -34,7 +34,7 @@ def initProducts():
         db.create_all()
         
         # Skip if DB already populated
-        if Product.query.first():
+        if db.session.query(Product.product_id).first():  
             return
 
         try:

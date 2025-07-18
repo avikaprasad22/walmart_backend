@@ -36,6 +36,7 @@ from api.student import student_api
 from api.nestPost import nestPost_api
 from api.messages_api import messages_api
 from api.vote import vote_api
+from api.product import inventory_api
 
 app.register_blueprint(user_api)
 app.register_blueprint(news_api)
@@ -49,6 +50,8 @@ app.register_blueprint(student_api)
 app.register_blueprint(nestPost_api)
 app.register_blueprint(messages_api)
 app.register_blueprint(vote_api)
+
+app.register_blueprint(inventory_api)
 # Login Manager
 # Login Manager
 login_manager.login_view = "login"
