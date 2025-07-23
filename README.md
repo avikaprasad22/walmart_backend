@@ -62,7 +62,7 @@ This project uses real and simulated data from the following sources:
 
 ## License
 MIT License
-© 2025 Nora Ahadian, Sonika Denuva, Katherine Chen, Zoe He, Avika Prasad, Gabriela Connelly
+© 2025 Nora Ahadian, Avika Prasad, Vibha Mandayam
 
 ---
 
