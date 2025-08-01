@@ -13,7 +13,11 @@ wishlist_api = Blueprint('wishlist_api', __name__, url_prefix='/api/wishlist')
 def get_all_products():
     products = Product.query.all()
     return jsonify([
-        {'id': p.id, 'name': p.name, 'availability': p.availability}
+        {
+            'product_id': p.product_id,
+            'name': p.name,
+            'availability': 'in stock' if p.stock > 0 else 'out of stock'
+        }
         for p in products
     ])
 
@@ -26,14 +30,16 @@ def get_user_wishlist():
 
     response = []
     for item in items:
-        response.append({
-            'id': item.id,
-            'product_id': item.product_id,
-            'product_name': item.product.name,
-            'availability': item.product.availability,
-            'date_added': item.date_added.strftime('%Y-%m-%d'),
-            'notify': item.notify
-        })
+        product = Product.query.get(item.product_id)
+        if product:
+            response.append({
+                'id': item.id,
+                'product_id': product.product_id,
+                'product_name': product.name,
+                'availability': 'in stock' if product.stock > 0 else 'out of stock',
+                'date_added': item.date_added.strftime('%Y-%m-%d'),
+                'notify': item.notify
+            })
     return jsonify(response)
 
 # Add product to wishlist
@@ -91,8 +97,8 @@ def delete_from_wishlist(id):
     db.session.commit()
     return jsonify({'message': 'Wishlist item removed'}), 200
 
-# Admin: Update product availability
-@wishlist_api.route('/availability/<int:product_id>', methods=['PUT'])
+# Admin: Update product stock (availability = derived from stock)
+@wishlist_api.route('/availability/<string:product_id>', methods=['PUT'])
 @token_required()
 def update_product_availability(product_id):
     current_user = g.current_user
@@ -100,26 +106,26 @@ def update_product_availability(product_id):
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
-    new_availability = data.get('availability')
-    if new_availability not in ['in stock', 'out of stock']:
-        return jsonify({'error': 'Invalid availability'}), 400
+    new_stock = data.get('stock')
+    if new_stock is None or not isinstance(new_stock, int):
+        return jsonify({'error': 'Invalid stock value'}), 400
 
     product = Product.query.get(product_id)
     if not product:
         return jsonify({'error': 'Product not found'}), 404
 
-    product.availability = new_availability
+    product.stock = new_stock
     db.session.commit()
 
-    # Notify users if the product is back in stock
-    if new_availability == 'in stock':
+    if new_stock > 0:
         notify_users(product_id)
 
-    return jsonify({'message': f'{product.name} marked as {new_availability}'}), 200
+    return jsonify({'message': f'{product.name} stock updated to {new_stock}'}), 200
 
 # Notify subscribed users (simulated print for now)
 def notify_users(product_id):
     wishlist_items = Wishlist.query.filter_by(product_id=product_id, notify=True).all()
     for item in wishlist_items:
         user = User.query.get(item.user_uid)
-        print(f"[NOTIFY] Notifying {user.name} ({user.email}) that {item.product.name} is now in stock.")
+        product = Product.query.get(item.product_id)
+        print(f"[NOTIFY] Notifying {user.name} ({user.email}) that {product.name} is now in stock.")

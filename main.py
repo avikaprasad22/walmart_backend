@@ -23,6 +23,8 @@ from model.post import initPosts
 from model.nestPost import initNestPosts
 from model.vote import initVotes
 from model.product import initProducts
+from model.wishlist import initWishlist
+
 # API imports (teammate + yours)
 from api.user import user_api
 from api.news import news_api
@@ -37,6 +39,7 @@ from api.nestPost import nestPost_api
 from api.messages_api import messages_api
 from api.vote import vote_api
 from api.product import inventory_api
+from api.wishlist import wishlist_api
 
 app.register_blueprint(user_api)
 app.register_blueprint(news_api)
@@ -50,8 +53,9 @@ app.register_blueprint(student_api)
 app.register_blueprint(nestPost_api)
 app.register_blueprint(messages_api)
 app.register_blueprint(vote_api)
-
 app.register_blueprint(inventory_api)
+app.register_blueprint(wishlist_api)
+
 # Login Manager
 # Login Manager
 login_manager.login_view = "login"
@@ -146,6 +150,7 @@ def generate_data():
     initNestPosts()
     initVotes()
     initProducts()
+    initWishlist()
 
 @custom_cli.command('backup_data')
 def backup_data():

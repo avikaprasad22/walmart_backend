@@ -2,8 +2,7 @@ from __init__ import db, app
 from model.product import Product
 from model.user import User
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, date
-import random
+from datetime import datetime
 import logging
 
 # Configure logging
@@ -16,12 +15,12 @@ class Wishlist(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_uid = db.Column(db.String, db.ForeignKey('users._uid'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    product_id = db.Column(db.String, db.ForeignKey('products.product_id'), nullable=False)
     date_added = db.Column(db.Date, default=lambda: datetime.utcnow().date())
     notify = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', backref='wishlist', lazy=True)
-    product = db.relationship('Product', backref='wishlist', lazy=True)
+    product = db.relationship('Product', backref='wishlist', lazy=True, primaryjoin="Wishlist.product_id == Product.product_id")
 
     def __repr__(self):
         return f"<Wishlist(id={self.id}, user_uid={self.user_uid}, product_id={self.product_id}, notify={self.notify}, date_added={self.date_added})>"
@@ -31,8 +30,8 @@ class Wishlist(db.Model):
             "id": self.id,
             "user_uid": self.user_uid,
             "product_id": self.product_id,
-            "product_name": self.product.name if self.product else None,
-            "availability": self.product.availability if self.product else "unknown",
+            "product": self.product.read() if self.product else None,
+            "availability": "in stock" if self.product and self.product.stock > 0 else "out of stock",
             "date_added": self.date_added.strftime('%Y-%m-%d'),
             "notify": self.notify
         }
@@ -115,9 +114,9 @@ def initWishlist():
         db.create_all()
 
         sample_items = [
-            Wishlist(user_uid='toby', product_id=1, notify=True),
-            Wishlist(user_uid='toby', product_id=2, notify=False),
-            Wishlist(user_uid='hop', product_id=3, notify=True),
+            Wishlist(user_uid='toby', product_id='1', notify=True),
+            Wishlist(user_uid='toby', product_id='2', notify=False),
+            Wishlist(user_uid='hop', product_id='3', notify=True),
         ]
 
         for item in sample_items:
