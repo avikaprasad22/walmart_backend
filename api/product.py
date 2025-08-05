@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_restful import Api, Resource
 from sqlalchemy import or_
-from __init__ import app
+from sqlalchemy.exc import IntegrityError
+from __init__ import app, db
 from model.product import Product, initProducts
 
 # Create Blueprint
@@ -11,7 +12,7 @@ api = Api(inventory_api)
 class InventoryAPI:
     class _CRUD(Resource):
         def post(self):
-            """Create a new product (admin-only in real apps)"""
+            """Create a new product"""
             data = request.get_json()
             if not data:
                 return {'message': 'No input data provided'}, 400
@@ -20,19 +21,26 @@ class InventoryAPI:
             if not all(key in data for key in required):
                 return {'message': f'Required fields: {required}'}, 400
 
-            product = Product(
-                product_id=data['product_id'],
-                name=data['name'],
-                stock=data['stock'],
-                aisle=data['aisle'],
-                price=data['price']
-            )
+            # Check if product_id already exists
+            if Product.query.filter_by(product_id=data['product_id']).first():
+                return {'message': f'Product ID {data["product_id"]} already exists'}, 409
 
-            if not product.create():
-                return {'message': 'Product creation failed'}, 500
-            
-            return jsonify(product.read())
+            try:
+                product = Product(
+                    product_id=data['product_id'],
+                    name=data['name'],
+                    stock=data['stock'],
+                    aisle=data['aisle'],
+                    price=data['price']
+                )
 
+                if not product.create():
+                    return {'message': 'Product creation failed'}, 500
+                
+                return jsonify(product.read())
+            except IntegrityError as e:
+                db.session.rollback()
+                return {'message': 'Database error: ' + str(e.orig)}, 500
         def get(self):
             """Get product by ID"""
             product_id = request.args.get('product_id')
