@@ -36,7 +36,17 @@ class Product(db.Model):
             "aisle": self.aisle,
             "price": self.price,
         }
-
+    def update(self, **kwargs):
+        """Update product fields"""
+        try:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error updating product: {str(e)}")
+            return False
 def initProducts():
     """Load CSV data into SQLite once at startup"""
     with app.app_context():
