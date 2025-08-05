@@ -107,11 +107,19 @@ class InventoryAPI:
             threshold = int(request.args.get('threshold', 5))
             products = Product.query.filter(Product.stock < threshold).all()
             return jsonify([p.read() for p in products])
+        
+    class _ALL(Resource):
+        def get(self):
+            """Get all products"""
+            products = Product.query.all()
+            return jsonify([p.read() for p in products])
+
 
 # Register endpoints
 api.add_resource(InventoryAPI._CRUD, '/')
 api.add_resource(InventoryAPI._SEARCH, '/search')
 api.add_resource(InventoryAPI._LOW_STOCK, '/low-stock')
+api.add_resource(InventoryAPI._ALL, '/all')
 
 # Initialize data (call once)
 initProducts()
